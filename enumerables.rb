@@ -1,22 +1,28 @@
-# rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+# rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength
 module Enumerable
   def my_each
+    return to_enum(:my_each) unless block_given?
+
     i = 0
     while i < length
-      yield self[i] if block_given?
+      yield self[i]
       i += 1
     end
   end
 
   def my_each_with_index
+    return to_enum(:my_each_with_index) unless block_given?
+
     j = 0
     while j < length
-      yield self[j], j if block_given?
+      yield self[j], j
       j += 1
     end
   end
 
   def my_select
+    return to_enum(:my_select) unless block_given?
+
     selected = []
     my_each do |i|
       result = yield(i)
@@ -25,36 +31,64 @@ module Enumerable
     selected
   end
 
-  def my_all?
+  def my_all?(arg = nil)
     condition = true
+    return true if empty?
+
     my_each do |i|
-      return true unless block_given?
       return false unless i
+      return true if i && !arg
 
-      result = yield(i)
-      return false unless result
+      case arg
+      when Class
+        condition = false if i.is_a?(arg) == false
+      when Regexp
+        condition = false unless i&.to_s&.match?(arg)
+      when String || Numeric
+        condition = false if arg != i
+      end
+      result = yield(i) if block_given?
+      condition = result if block_given?
+      break if condition == false
     end
     condition
   end
 
-  def my_any?
-    condition = true
-    my_each do |i|
-      return true unless block_given?
+  def my_any?(arg = nil)
+    condition = false
+    return false if empty?
 
-      result = yield(i)
-      return true if result
+    my_each do |i|
+      case arg
+      when Class
+        condition = true if i.is_a?(arg)
+      when Regexp
+        condition = true if i&.to_s&.match?(arg)
+      when String || Numeric
+        condition = true if arg == i
+      end
+      result = yield(i) if block_given?
+      condition = result if block_given?
+      break if condition == true
     end
     condition
   end
 
-  def my_none?
+  def my_none?(arg = nil)
     condition = true
-    my_each do |i|
-      return true unless block_given?
+    return false if empty?
 
-      result = yield(i)
-      return false if result == true
+    my_each do |i|
+      case arg
+      when Class
+        condition = false if i.is_a?(arg)
+      when Regexp
+        condition = true if i&.to_s&.match?(arg)
+      when String || Numeric
+        condition = false if arg == i
+      end
+      result = yield(i) if block_given?
+      condition = false if result && block_given?
     end
     condition
   end
@@ -89,7 +123,9 @@ module Enumerable
     sym = param[0] unless param.length == 2
     if param.length == 2
       sym = param[1]
-      val = param1[0]
+      val = param[0]
+    elsif block_given? && param
+      self << param[0]
     end
     temp = sym && sym.to_s == '*' ? 1 : 0
 
@@ -105,7 +141,7 @@ module Enumerable
   end
 end
 
-# rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+# rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength
 def multiply_els(val)
   val.my_inject(:*)
 end
