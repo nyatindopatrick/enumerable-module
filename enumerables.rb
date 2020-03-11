@@ -104,12 +104,13 @@ module Enumerable
     counter.length
   end
 
-  def my_map(&prc)
+  def my_map(prc = nil)
     results = []
-    return to_enum(:my_map) unless block_given?
+    return to_enum(:my_map) unless prc || block_given?
 
     my_each do |i|
-      my_block_map = yield(i)
+      my_block_map = yield(i) if block_given?
+
       results << (prc ? prc.call(i) : my_block_map)
     end
     results
