@@ -1,4 +1,4 @@
-# rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength
+# rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength, Metrics/MethodLength
 module Enumerable
   def my_each
     arr = self.class == Range ? Array(self) : self
@@ -154,7 +154,7 @@ module Enumerable
   end
 end
 
-# rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength
+# rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength, Metrics/MethodLength
 def multiply_els(val)
   val.my_inject(:*)
 end
