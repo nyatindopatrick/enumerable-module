@@ -1,21 +1,23 @@
 # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ModuleLength
 module Enumerable
   def my_each
+    arr = self.class == Range ? Array(self) : self
     return to_enum(:my_each) unless block_given?
 
     i = 0
-    while i < length
-      yield self[i]
+    while i < arr.length
+      yield arr[i]
       i += 1
     end
   end
 
   def my_each_with_index
+    arr = self.class == Range ? Array(self) : self
     return to_enum(:my_each_with_index) unless block_given?
 
     j = 0
-    while j < length
-      yield self[j], j
+    while j < arr.length
+      yield arr[j], j
       j += 1
     end
   end
@@ -32,19 +34,20 @@ module Enumerable
   end
 
   def my_all?(arg = nil)
+    arr = self.class == Range ? Array(self) : self
+
     condition = true
     return true if empty?
 
-    my_each do |i|
-      return false unless i
-      return true if i && !arg
+    arr.my_each_with_index do |i, j|
+      return false unless i && arr[j + 1] && arr[j] == arr[j + 1] && !block_given?
 
       case arg
       when Class
         condition = false if i.is_a?(arg) == false
       when Regexp
         condition = false unless i&.to_s&.match?(arg)
-      when String || Numeric
+      when Integer || String
         condition = false if arg != i
       end
       result = yield(i) if block_given?
@@ -55,16 +58,20 @@ module Enumerable
   end
 
   def my_any?(arg = nil)
+    arr = self.class == Range ? Array(self) : self
+
     condition = false
     return false if empty?
 
-    my_each do |i|
+    arr.my_each_with_index do |i, _j|
+      return true if i
+
       case arg
       when Class
         condition = true if i.is_a?(arg)
       when Regexp
         condition = true if i&.to_s&.match?(arg)
-      when String || Numeric
+      when String || Integer
         condition = true if arg == i
       end
       result = yield(i) if block_given?
@@ -75,16 +82,19 @@ module Enumerable
   end
 
   def my_none?(arg = nil)
+    arr = self.class == Range ? Array(self) : self
     condition = true
     return false if empty?
 
-    my_each do |i|
+    arr.my_each_with_index do |i, j|
+      return false if i && arr[j + 1] && arr[j] != arr[j + 1] && !block_given?
+
       case arg
       when Class
         condition = false if i.is_a?(arg)
       when Regexp
         condition = true if i&.to_s&.match?(arg)
-      when String || Numeric
+      when String || Integer
         condition = false if arg == i
       end
       result = yield(i) if block_given?
@@ -93,13 +103,14 @@ module Enumerable
     condition
   end
 
-  def my_count
-    return length unless block_given?
+  def my_count(arg = nil)
+    return length if !arg && !block_given?
 
     counter = []
     my_each do |i|
-      my_block = yield(i)
-      counter << i if my_block
+      counter << i if (i == arg) && !block_given?
+      my_block = yield(i) if block_given?
+      counter << i if block_given? && my_block
     end
     counter.length
   end
@@ -117,7 +128,8 @@ module Enumerable
   end
 
   def my_inject(*param)
-    return nil if empty?
+    arr = self.class == Range ? Array(self) : self
+    return nil if self.class != Range && empty?
 
     sym = nil
     val = nil
@@ -126,15 +138,15 @@ module Enumerable
       sym = param[1]
       val = param[0]
     elsif block_given? && param
-      self << param[0]
+      arr << param[0]
     end
     temp = sym && sym.to_s == '*' ? 1 : 0
 
-    my_each_with_index do |i, j|
+    arr.my_each_with_index do |i, j|
       temp = temp.send(sym, i) unless block_given?
-      if block_given? && self[j + 1]
-        my_yield = yield(self[j], self[j + 1])
-        self[j + 1] = my_yield
+      if block_given? && arr[j + 1]
+        my_yield = yield(arr[j], arr[j + 1])
+        arr[j + 1] = my_yield
         temp = my_yield
       end
     end
