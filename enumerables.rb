@@ -71,12 +71,10 @@ module Enumerable
         condition = true if i.is_a?(arg[0])
       when Regexp
         condition = true if i&.to_s&.match?(arg[0])
-      else 
-        condition = true if arg[0] === i
+      else
+        condition = true if arg[0] == i
       end
-      if block_given?
-        condition = yield(i)
-      end
+      condition = yield(i) if block_given?
       break if condition == true
     end
     condition
@@ -96,7 +94,7 @@ module Enumerable
       when Regexp
         condition = false if i&.to_s&.match?(arg[0])
       else
-        condition = false if arg[0] === i
+        condition = false if arg[0] == i
       end
       result = yield(i) if block_given?
       condition = false if result && block_given?
@@ -145,7 +143,8 @@ module Enumerable
     temp = sym && sym.to_s == '*' ? 1 : 0
 
     arr.my_each_with_index do |i, j|
-      return param[0].call(i, arr[j+1]) if param[0].class == Proc 
+      return param[0].call(i, arr[j + 1]) if param[0].class == Proc
+
       temp = temp.send(sym, i) unless block_given?
       if block_given? && arr[j + 1]
         my_yield = yield(arr[j], arr[j + 1])
