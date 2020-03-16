@@ -33,22 +33,24 @@ module Enumerable
     selected
   end
 
-  def my_all?(arg = nil)
+  def my_all?(*arg)
     arr = self.class == Range ? Array(self) : self
 
     condition = true
     return true if empty?
 
     arr.my_each_with_index do |i, j|
-      return false unless i && arr[j + 1] && arr[j] == arr[j + 1] && !block_given?
+      return true if i && arr[j + 1] && arr[j] == arr[j + 1] && !arg && !block_given?
 
-      case arg
+      case arg[0]
       when Class
-        condition = false if i.is_a?(arg) == false
+        condition = false if i.is_a?(arg[0]) == false
       when Regexp
-        condition = false unless i&.to_s&.match?(arg)
+        condition = false unless i&.to_s&.match?(arg[0])
       when Integer || String
-        condition = false if arg != i
+        condition = false if arg[0] != i
+      when Proc
+        condition = false if arg[0].call(i) == false
       end
       result = yield(i) if block_given?
       condition = result if block_given?
@@ -57,22 +59,22 @@ module Enumerable
     condition
   end
 
-  def my_any?(arg = nil)
+  def my_any?(*arg)
     arr = self.class == Range ? Array(self) : self
 
     condition = false
     return false if empty?
 
     arr.my_each_with_index do |i, _j|
-      return true if i
+      return true if i && !block_given? && !arg[0]
 
-      case arg
+      case arg[0]
       when Class
-        condition = true if i.is_a?(arg)
+        condition = true if i.is_a?(arg[0])
       when Regexp
-        condition = true if i&.to_s&.match?(arg)
-      when String || Integer
-        condition = true if arg == i
+        condition = true if i&.to_s&.match?(arg[0])
+      when Integer || String
+        condition = true if arg[0] == i
       end
       result = yield(i) if block_given?
       condition = result if block_given?
@@ -81,21 +83,21 @@ module Enumerable
     condition
   end
 
-  def my_none?(arg = nil)
+  def my_none?(*arg)
     arr = self.class == Range ? Array(self) : self
     condition = true
     return false if empty?
 
     arr.my_each_with_index do |i, j|
-      return false if i && arr[j + 1] && arr[j] != arr[j + 1] && !block_given?
+      return false if i && arr[j + 1] && arr[j] != arr[j + 1] && !arg[0] && !block_given?
 
-      case arg
+      case arg[0]
       when Class
-        condition = false if i.is_a?(arg)
+        condition = false if i.is_a?(arg[0])
       when Regexp
-        condition = true if i&.to_s&.match?(arg)
-      when String || Integer
-        condition = false if arg == i
+        condition = true if i&.to_s&.match?(arg[0])
+      when Integer || String
+        condition = false if arg[0] == i
       end
       result = yield(i) if block_given?
       condition = false if result && block_given?
@@ -137,7 +139,7 @@ module Enumerable
     if param.length == 2
       sym = param[1]
       val = param[0]
-    elsif block_given? && param
+    elsif block_given? && param[0]
       arr << param[0]
     end
     temp = sym && sym.to_s == '*' ? 1 : 0
