@@ -39,8 +39,8 @@ module Enumerable
     condition = true
     return true if empty?
 
-    arr.my_each_with_index do |i, j|
-      condition = true if i && arr[j + 1] && arr[j] == arr[j + 1] && !arg && !block_given?
+    arr.my_each_with_index do |i, _j|
+      condition = false if !i && !arg[0] && !block_given?
 
       case arg[0]
       when Class
@@ -48,7 +48,7 @@ module Enumerable
       when Regexp
         condition = false unless i&.to_s&.match?(arg[0])
       else
-        condition = false if arg[0] != i
+        condition = false if arg[0] && arg[0] != i
       end
       result = yield(i) if block_given?
       condition = result if block_given?
@@ -72,7 +72,7 @@ module Enumerable
       when Regexp
         condition = true if i&.to_s&.match?(arg[0])
       else
-        condition = true if arg[0] == i
+        condition = true if arg[0] && arg[0] == i
       end
       condition = yield(i) if block_given?
       break if condition == true
@@ -94,7 +94,7 @@ module Enumerable
       when Regexp
         condition = false if i&.to_s&.match?(arg[0])
       else
-        condition = false if arg[0] == i
+        condition = false if arg[0] && arg[0] == i
       end
       result = yield(i) if block_given?
       condition = false if result && block_given?
@@ -143,7 +143,7 @@ module Enumerable
     temp = sym && sym.to_s == '*' ? 1 : 0
 
     arr.my_each_with_index do |i, j|
-      return param[0].call(i, arr[j + 1]) if param[0].class == Proc
+      return param[0].call(i, arr[j + 1]) if param[0].class == Proc || param.length == 1 && !param[0]
 
       temp = temp.send(sym, i) unless block_given?
       if block_given? && arr[j + 1]
@@ -152,6 +152,7 @@ module Enumerable
         temp = my_yield
       end
     end
+
     val ? temp.send(sym, val) : temp
   end
 end
